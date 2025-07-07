@@ -20,17 +20,8 @@ class InventoryViewModel @Inject constructor(private val inventoryRepository: In
     private val _allItems = MutableStateFlow<List<InventoryItem>>(emptyList())
     private val _selectedCategoryId = MutableStateFlow<Long?>(null)
     
-    val inventoryItems: StateFlow<List<InventoryItem>> = 
-        combine(_allItems, _selectedCategoryId) { items, categoryId ->
-            if (categoryId == null) items
-            else items.filter { it.categoryId == categoryId }
-        }.let { flow ->
-            MutableStateFlow<List<InventoryItem>>(emptyList()).apply {
-                viewModelScope.launch {
-                    flow.collect { value = it }
-                }
-            }.asStateFlow()
-        }
+    private val _inventoryItems = MutableStateFlow<List<InventoryItem>>(emptyList())
+    val inventoryItems: StateFlow<List<InventoryItem>> = _inventoryItems.asStateFlow()
 
     private val _lowStockItems = MutableStateFlow<List<InventoryItem>>(emptyList())
     val lowStockItems: StateFlow<List<InventoryItem>> = _lowStockItems.asStateFlow()
@@ -43,17 +34,28 @@ class InventoryViewModel @Inject constructor(private val inventoryRepository: In
     init {
         loadAllItems()
         loadLowStockItems()
+        
+        // Update filtered items when allItems or selectedCategoryId changes
+        viewModelScope.launch {
+            combine(_allItems, _selectedCategoryId) { items, categoryId ->
+                if (categoryId == null) items
+                else items.filter { it.categoryId == categoryId }
+            }.collect { filteredItems ->
+                _inventoryItems.value = filteredItems
+            }
+        }
     }
 
     private fun loadAllItems() {
         viewModelScope.launch {
             _isLoading.value = true
-            try {
-                inventoryRepository.getAllItems().collect { items -> 
-                    _allItems.value = items 
+            var isFirstEmission = true
+            inventoryRepository.getAllItems().collect { items -> 
+                _allItems.value = items
+                if (isFirstEmission) {
+                    _isLoading.value = false
+                    isFirstEmission = false
                 }
-            } finally {
-                _isLoading.value = false
             }
         }
     }

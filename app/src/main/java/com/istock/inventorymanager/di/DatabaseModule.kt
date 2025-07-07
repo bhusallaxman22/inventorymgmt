@@ -20,8 +20,7 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideInventoryDatabase(@ApplicationContext context: Context): InventoryDatabase {
-        return Room.databaseBuilder(context, InventoryDatabase::class.java, "inventory_database")
-                .build()
+        return InventoryDatabase.getDatabase(context)
     }
 
     @Provides
