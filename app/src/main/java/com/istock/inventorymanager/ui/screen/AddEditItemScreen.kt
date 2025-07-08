@@ -69,280 +69,300 @@ fun AddEditItemScreen(
     var datePickerType by remember { mutableStateOf("expiration") }
     var expandedCategory by remember { mutableStateOf(false) }
 
-    val context = LocalContext.current
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
     val imageCapture = remember { ImageCapture.Builder().build() }
 
     val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
 
-    Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         // Header
-        Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                    text = if (item == null) "Add New Item" else "Edit Item",
-                    style = MaterialTheme.typography.headlineMedium
-            )
-            IconButton(onClick = onCancel) {
-                Icon(Icons.Default.Close, contentDescription = "Cancel")
-            }
-        }
-
-        // Image Section
-        Card(
-                modifier =
-                        Modifier.fillMaxWidth().height(200.dp).clickable {
-                            if (cameraPermissionState.status.isGranted) {
-                                showCamera = true
-                            } else {
-                                cameraPermissionState.launchPermissionRequest()
-                            }
-                        },
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                if (imagePath != null) {
-                    AsyncImage(
-                            model = imagePath,
-                            contentDescription = "Item image",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                    )
-                    // Delete image button
-                    IconButton(
-                            onClick = { imagePath = null },
-                            modifier =
-                                    Modifier.align(Alignment.TopEnd)
-                                            .padding(8.dp)
-                                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                    ) {
-                        Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Delete image",
-                                tint = Color.White
-                        )
-                    }
-                } else {
-                    Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                                Icons.Default.CameraAlt,
-                                contentDescription = "Add image",
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                                text = "Tap to add image",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        }
-
-        // Basic Information
-        OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Item Name *") },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.Inventory, contentDescription = null) }
-        )
-
-        OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("Description") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 2,
-                leadingIcon = { Icon(Icons.Default.Description, contentDescription = null) }
-        )
-
-        // Category Dropdown
-        ExposedDropdownMenuBox(
-                expanded = expandedCategory,
-                onExpandedChange = { expandedCategory = !expandedCategory }
-        ) {
-            OutlinedTextField(
-                    value = selectedCategory?.name ?: "",
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Category *") },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory)
-                    },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(),
-                    leadingIcon = { Icon(Icons.Default.Category, contentDescription = null) }
-            )
-            ExposedDropdownMenu(
-                    expanded = expandedCategory,
-                    onDismissRequest = { expandedCategory = false }
+        Surface(modifier = Modifier.fillMaxWidth(), shadowElevation = 4.dp) {
+            Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
             ) {
-                categories.forEach { category ->
-                    DropdownMenuItem(
-                            text = { Text(category.name) },
-                            onClick = {
-                                selectedCategory = category
-                                expandedCategory = false
-                            }
-                    )
+                Text(
+                        text = if (item == null) "Add New Item" else "Edit Item",
+                        style = MaterialTheme.typography.headlineMedium
+                )
+                IconButton(onClick = onCancel) {
+                    Icon(Icons.Default.Close, contentDescription = "Cancel")
                 }
             }
         }
 
-        // Quantity and Stock
-        Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // Scrollable content
+        Column(
+                modifier =
+                        Modifier.weight(1f)
+                                .padding(horizontal = 16.dp)
+                                .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            OutlinedTextField(
-                    value = quantity,
-                    onValueChange = { quantity = it },
-                    label = { Text("Quantity *") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null) }
-            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                    value = minStockLevel,
-                    onValueChange = { minStockLevel = it },
-                    label = { Text("Min Stock") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    leadingIcon = { Icon(Icons.Default.Warning, contentDescription = null) }
-            )
-        }
-
-        // Price and Location
-        Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedTextField(
-                    value = price,
-                    onValueChange = { price = it },
-                    label = { Text("Price") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = null) }
-            )
-
-            OutlinedTextField(
-                    value = location,
-                    onValueChange = { location = it },
-                    label = { Text("Location") },
-                    modifier = Modifier.weight(1f),
-                    leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null) }
-            )
-        }
-
-        // Dates
-        Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedTextField(
-                    value = expirationDate?.let { dateFormatter.format(it) } ?: "",
-                    onValueChange = {},
-                    label = { Text("Expiry Date") },
+            // Image Section
+            Card(
                     modifier =
-                            Modifier.weight(1f).clickable {
-                                datePickerType = "expiration"
-                                showDatePicker = true
+                            Modifier.fillMaxWidth().height(200.dp).clickable {
+                                if (cameraPermissionState.status.isGranted) {
+                                    showCamera = true
+                                } else {
+                                    cameraPermissionState.launchPermissionRequest()
+                                }
                             },
-                    readOnly = true,
-                    leadingIcon = { Icon(Icons.Default.Event, contentDescription = null) },
-                    trailingIcon = {
-                        if (expirationDate != null) {
-                            IconButton(onClick = { expirationDate = null }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear date")
-                            }
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    if (imagePath != null) {
+                        AsyncImage(
+                                model = imagePath,
+                                contentDescription = "Item image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                        )
+                        // Delete image button
+                        IconButton(
+                                onClick = { imagePath = null },
+                                modifier =
+                                        Modifier.align(Alignment.TopEnd)
+                                                .padding(8.dp)
+                                                .background(
+                                                        Color.Black.copy(alpha = 0.5f),
+                                                        CircleShape
+                                                )
+                        ) {
+                            Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Delete image",
+                                    tint = Color.White
+                            )
+                        }
+                    } else {
+                        Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                    Icons.Default.CameraAlt,
+                                    contentDescription = "Add image",
+                                    modifier = Modifier.size(48.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                    text = "Tap to add image",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
+                }
+            }
+
+            // Basic Information
+            OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Item Name *") },
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = { Icon(Icons.Default.Inventory, contentDescription = null) }
             )
 
             OutlinedTextField(
-                    value = warrantyDate?.let { dateFormatter.format(it) } ?: "",
-                    onValueChange = {},
-                    label = { Text("Warranty Date") },
-                    modifier =
-                            Modifier.weight(1f).clickable {
-                                datePickerType = "warranty"
-                                showDatePicker = true
-                            },
-                    readOnly = true,
-                    leadingIcon = { Icon(Icons.Default.Security, contentDescription = null) },
-                    trailingIcon = {
-                        if (warrantyDate != null) {
-                            IconButton(onClick = { warrantyDate = null }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear date")
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    leadingIcon = { Icon(Icons.Default.Description, contentDescription = null) }
+            )
+
+            // Category Dropdown
+            ExposedDropdownMenuBox(
+                    expanded = expandedCategory,
+                    onExpandedChange = { expandedCategory = !expandedCategory }
+            ) {
+                OutlinedTextField(
+                        value = selectedCategory?.name ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Category *") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory)
+                        },
+                        modifier = Modifier.fillMaxWidth().menuAnchor(),
+                        leadingIcon = { Icon(Icons.Default.Category, contentDescription = null) }
+                )
+                ExposedDropdownMenu(
+                        expanded = expandedCategory,
+                        onDismissRequest = { expandedCategory = false }
+                ) {
+                    categories.forEach { category ->
+                        DropdownMenuItem(
+                                text = { Text(category.name) },
+                                onClick = {
+                                    selectedCategory = category
+                                    expandedCategory = false
+                                }
+                        )
+                    }
+                }
+            }
+
+            // Quantity and Stock
+            Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                        value = quantity,
+                        onValueChange = { quantity = it },
+                        label = { Text("Quantity *") },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null) }
+                )
+
+                OutlinedTextField(
+                        value = minStockLevel,
+                        onValueChange = { minStockLevel = it },
+                        label = { Text("Min Stock") },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        leadingIcon = { Icon(Icons.Default.Warning, contentDescription = null) }
+                )
+            }
+
+            // Price and Location
+            Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                        value = price,
+                        onValueChange = { price = it },
+                        label = { Text("Price") },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = null) }
+                )
+
+                OutlinedTextField(
+                        value = location,
+                        onValueChange = { location = it },
+                        label = { Text("Location") },
+                        modifier = Modifier.weight(1f),
+                        leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null) }
+                )
+            }
+
+            // Dates
+            Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                        value = expirationDate?.let { dateFormatter.format(it) } ?: "",
+                        onValueChange = {},
+                        label = { Text("Expiry Date") },
+                        modifier =
+                                Modifier.weight(1f).clickable {
+                                    datePickerType = "expiration"
+                                    showDatePicker = true
+                                },
+                        readOnly = true,
+                        leadingIcon = { Icon(Icons.Default.Event, contentDescription = null) },
+                        trailingIcon = {
+                            if (expirationDate != null) {
+                                IconButton(onClick = { expirationDate = null }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear date")
+                                }
                             }
                         }
+                )
+
+                OutlinedTextField(
+                        value = warrantyDate?.let { dateFormatter.format(it) } ?: "",
+                        onValueChange = {},
+                        label = { Text("Warranty Date") },
+                        modifier =
+                                Modifier.weight(1f).clickable {
+                                    datePickerType = "warranty"
+                                    showDatePicker = true
+                                },
+                        readOnly = true,
+                        leadingIcon = { Icon(Icons.Default.Security, contentDescription = null) },
+                        trailingIcon = {
+                            if (warrantyDate != null) {
+                                IconButton(onClick = { warrantyDate = null }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear date")
+                                }
+                            }
+                        }
+                )
+            }
+
+            // Barcode
+            OutlinedTextField(
+                    value = barcode,
+                    onValueChange = { barcode = it },
+                    label = { Text("Barcode/SKU") },
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = { Icon(Icons.Default.QrCode, contentDescription = null) }
+            )
+
+            // Notes
+            OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Notes") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    leadingIcon = {
+                        Icon(Icons.Filled.Notes, contentDescription = null)
                     }
             )
+
+            // Add bottom padding for better scrolling experience
+            Spacer(modifier = Modifier.height(80.dp)) // Extra space for the bottom button
         }
 
-        // Barcode
-        OutlinedTextField(
-                value = barcode,
-                onValueChange = { barcode = it },
-                label = { Text("Barcode/SKU") },
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { Icon(Icons.Default.QrCode, contentDescription = null) }
-        )
-
-        // Notes
-        OutlinedTextField(
-                value = notes,
-                onValueChange = { notes = it },
-                label = { Text("Notes") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 3,
-                leadingIcon = { Icon(Icons.Default.Notes, contentDescription = null) }
-        )
-
-        // Save Button
-        Button(
-                onClick = {
-                    if (name.isNotBlank() && selectedCategory != null && quantity.isNotBlank()) {
-                        val newItem =
-                                InventoryItem(
-                                        id = item?.id ?: 0,
-                                        name = name.trim(),
-                                        description = description.trim(),
-                                        categoryId = selectedCategory!!.id,
-                                        quantity = quantity.toIntOrNull() ?: 0,
-                                        minStockLevel = minStockLevel.toIntOrNull() ?: 0,
-                                        expirationDate = expirationDate,
-                                        warrantyDate = warrantyDate,
-                                        price = price.toDoubleOrNull() ?: 0.0,
-                                        imagePath = imagePath,
-                                        barcode = barcode.trim().ifEmpty { null },
-                                        location = location.trim(),
-                                        notes = notes.trim(),
-                                        createdAt = item?.createdAt ?: Date(),
-                                        updatedAt = Date()
-                                )
-                        onSave(newItem)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = name.isNotBlank() && selectedCategory != null && quantity.isNotBlank()
-        ) {
-            Icon(Icons.Default.Save, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(if (item == null) "Add Item" else "Update Item")
+        // Fixed bottom save button
+        Surface(modifier = Modifier.fillMaxWidth(), shadowElevation = 8.dp) {
+            Button(
+                    onClick = {
+                        if (name.isNotBlank() && selectedCategory != null && quantity.isNotBlank()
+                        ) {
+                            val newItem =
+                                    InventoryItem(
+                                            id = item?.id ?: 0,
+                                            name = name.trim(),
+                                            description = description.trim(),
+                                            categoryId = selectedCategory!!.id,
+                                            quantity = quantity.toIntOrNull() ?: 0,
+                                            minStockLevel = minStockLevel.toIntOrNull() ?: 0,
+                                            expirationDate = expirationDate,
+                                            warrantyDate = warrantyDate,
+                                            price = price.toDoubleOrNull() ?: 0.0,
+                                            imagePath = imagePath,
+                                            barcode = barcode.trim().ifEmpty { null },
+                                            location = location.trim(),
+                                            notes = notes.trim(),
+                                            createdAt = item?.createdAt ?: Date(),
+                                            updatedAt = Date()
+                                    )
+                            onSave(newItem)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    enabled = name.isNotBlank() && selectedCategory != null && quantity.isNotBlank()
+            ) {
+                Icon(Icons.Default.Save, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(if (item == null) "Add Item" else "Update Item")
+            }
         }
     }
 
